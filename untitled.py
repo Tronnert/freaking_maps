@@ -84,7 +84,6 @@ class Example(QMainWindow):
                 self.toponym_longitude = 179
             self.toponym_longitude = str(self.toponym_longitude)
             self.regenerate()
-        print(self.toponym_lattitude, self.toponym_longitude)
 
 
 if __name__ == '__main__':
