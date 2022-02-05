@@ -23,7 +23,7 @@ class Example(QMainWindow):
         geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
         geocoder_params = {
             "apikey": "40d1649f-0493-4b70-98ba-98533de7710b",
-            "geocode": 'москва',
+            "geocode": 'Москва',
             "format": "json"}
         response = requests.get(geocoder_api_server, params=geocoder_params)
         json_response = response.json()
@@ -56,7 +56,35 @@ class Example(QMainWindow):
             if float(self.delta) <= 0.000001:
                 self.delta = '0.000001'
             self.regenerate()
-
+        elif event.key() == Qt.Key_W:
+            self.toponym_lattitude = float(self.toponym_lattitude)
+            self.toponym_lattitude += float(self.delta)
+            if self.toponym_lattitude < -90 or self.toponym_lattitude > 90:
+                self.toponym_lattitude %= 90
+            self.toponym_lattitude = str(self.toponym_lattitude)
+            self.regenerate()
+        elif event.key() == Qt.Key_S:
+            self.toponym_lattitude = float(self.toponym_lattitude)
+            self.toponym_lattitude -= float(self.delta)
+            if self.toponym_lattitude < -90 or self.toponym_lattitude > 90:
+                self.toponym_lattitude %= 90
+            self.toponym_lattitude = str(self.toponym_lattitude)
+            self.regenerate()
+        elif event.key() == Qt.Key_A:
+            self.toponym_longitude = float(self.toponym_longitude)
+            self.toponym_longitude -= float(self.delta) * 2
+            if self.toponym_longitude < -180:
+                self.toponym_longitude = 180 - self.toponym_longitude % 180
+            self.toponym_longitude = str(self.toponym_longitude)
+            self.regenerate()
+        elif event.key() == Qt.Key_D:
+            self.toponym_longitude = float(self.toponym_longitude)
+            self.toponym_longitude += float(self.delta) * 2
+            if self.toponym_longitude > 180:
+                self.toponym_longitude = -180 + self.toponym_longitude % 180
+            self.toponym_longitude = str(self.toponym_longitude)
+            self.regenerate()
+        print(self.toponym_lattitude, self.toponym_longitude)
 
 
 if __name__ == '__main__':
