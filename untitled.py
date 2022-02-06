@@ -17,6 +17,22 @@ class Example(QMainWindow):
         self.speed = 1.4
         self.top()
         self.delta = "0.005"
+        self.param_l = 'map'
+
+        self.pushButton.clicked.connect(self.change_layer)
+        self.pushButton.show()
+        self.pushButton_2.clicked.connect(self.change_layer)
+        self.pushButton_3.clicked.connect(self.change_layer)
+
+        self.regenerate()
+
+    def change_layer(self):
+        if self.sender().text() == 'Карта':
+            self.param_l = 'map'
+        elif self.sender().text() == 'Спутник':
+            self.param_l = 'sat'
+        elif self.sender().text() == 'Гибрид':
+            self.param_l = 'skl'
         self.regenerate()
 
     def top(self):
@@ -36,7 +52,7 @@ class Example(QMainWindow):
         map_params = {
             "ll": ",".join([self.toponym_longitude, self.toponym_lattitude]),
             "spn": ",".join([self.delta, self.delta]),
-            "l": "map"
+            "l": self.param_l
         }
         map_api_server = "http://static-maps.yandex.ru/1.x/"
         response = requests.get(map_api_server, params=map_params)
