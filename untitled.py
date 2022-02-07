@@ -14,17 +14,18 @@ class Example(QMainWindow):
     def __init__(self):
         super().__init__()
         uic.loadUi("fucking_maps.ui", self)
+        self.setFixedSize(self.width(), self.height())
         self.speed = 1.4
-        self.top()
         self.delta = "0.005"
         self.param_l = 'map'
+        self.point = ''
+        self.top()
 
-        self.pushButton.clicked.connect(self.change_layer)
-        self.pushButton.show()
-        self.pushButton_2.clicked.connect(self.change_layer)
-        self.pushButton_3.clicked.connect(self.change_layer)
+        self.map.clicked.connect(self.change_layer)
+        self.sat.clicked.connect(self.change_layer)
+        self.skl.clicked.connect(self.change_layer)
 
-        self.regenerate()
+        self.find.clicked.connect(self.top)
 
     def change_layer(self):
         if self.sender().text() == 'Карта':
@@ -39,7 +40,7 @@ class Example(QMainWindow):
         geocoder_api_server = "http://geocode-maps.yandex.ru/1.x/"
         geocoder_params = {
             "apikey": "40d1649f-0493-4b70-98ba-98533de7710b",
-            "geocode": 'москва',
+            "geocode": self.lineEdit.text(),
             "format": "json"}
         response = requests.get(geocoder_api_server, params=geocoder_params)
         json_response = response.json()
@@ -47,13 +48,17 @@ class Example(QMainWindow):
             "featureMember"][0]["GeoObject"]
         toponym_coodrinates = toponym["Point"]["pos"]
         self.toponym_longitude, self.toponym_lattitude = toponym_coodrinates.split(" ")
+        self.point = ",".join([self.toponym_longitude, self.toponym_lattitude]) + ',pmwtm1'
+        self.regenerate()
 
     def regenerate(self):
         map_params = {
             "ll": ",".join([self.toponym_longitude, self.toponym_lattitude]),
             "spn": ",".join([self.delta, self.delta]),
-            "l": self.param_l
+            "l": self.param_l,
         }
+        if self.point:
+            map_params.update({'pt': self.point})
         map_api_server = "http://static-maps.yandex.ru/1.x/"
         response = requests.get(map_api_server, params=map_params)
         self.a = Image.open(BytesIO(response.content))
