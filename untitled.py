@@ -60,8 +60,9 @@ class Example(QMainWindow):
         if self.on.isChecked() and toponym_postal_code:
             toponym_address += ', ' + toponym_postal_code
         self.full.setText(toponym_address)
-        self.toponym_longitude, self.toponym_lattitude = toponym_coodrinates.split(" ")
-        self.point = ",".join([self.toponym_longitude, self.toponym_lattitude]) + ',pmwtm'
+        if 'Point' not in json_response["response"]["GeoObjectCollection"]['metaDataProperty']['GeocoderResponseMetaData'].keys():
+            self.toponym_longitude, self.toponym_lattitude = toponym_coodrinates.split(" ")
+        self.point = ",".join(toponym_coodrinates.split(" ")) + ',pmwtm'
         self.regenerate()
 
     def regenerate(self):
@@ -131,6 +132,52 @@ class Example(QMainWindow):
             self.toponym_longitude = str(new_lon)
             self.regenerate()
 
+    def mousePressEvent(self, event):
+        if 10 < event.x() < 610 and 20 < event.y() < 470:
+            if event.button() == Qt.LeftButton or event.button() == Qt.RightButton:
+                x0 = self.merc_x(float(self.toponym_longitude)) * self.get_k() + (event.x() - 310) * 2
+                y0 = self.merc_y(float(self.toponym_lattitude)) * self.get_k() + (245 - event.y()) * 2
+                lon = self.merc_lon(x0 / self.get_k())
+                lat = self.merc_lat(y0 / self.get_k())
+                self.input.setText(','.join(map(str, [lon, lat])))
+                self.top()
+                if event.button() == Qt.RightButton:
+                    search_api_server = "https://search-maps.yandex.ru/v1/"
+                    api_key = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
+                    search_params = {
+                        "apikey": api_key,
+                        "text": self.full.text(),
+                        "lang": "ru_RU",
+                        "type": "biz"
+                    }
+                    response = requests.get(search_api_server, params=search_params)
+                    if not response:
+                        self.drop_def()
+                        return
+                    json_response = response.json()
+                    organization = json_response["features"][0]
+                    org_name = organization["properties"]["CompanyMetaData"]["name"]
+                    org_address = organization["properties"]["CompanyMetaData"]["address"]
+                    point = organization["geometry"]["coordinates"]
+                    org_point = "{0},{1}".format(point[0], point[1])
+                    # print((lon, lat), tuple(map(float, org_point.split(','))))
+                    # print(self.lonlat_distance((lon, lat), tuple(map(float, org_point.split(',')))))
+                    if self.lonlat_distance((lon, lat), tuple(map(float, org_point.split(',')))) <= 50:
+                        self.point = org_point + ',pmwtm'
+                        self.full.setText(self.full.text() + ' ' + org_name)
+                        self.regenerate()
+
+    def lonlat_distance(self, a, b):
+        degree_to_meters_factor = 111 * 1000
+        a_lon, a_lat = a
+        b_lon, b_lat = b
+        radians_lattitude = math.radians((a_lat + b_lat) / 2.)
+        lat_lon_factor = math.cos(radians_lattitude)
+        dx = abs(a_lon - b_lon) * degree_to_meters_factor * lat_lon_factor
+        dy = abs(a_lat - b_lat) * degree_to_meters_factor
+        distance = math.sqrt(dx * dx + dy * dy)
+        return distance
+
     def merc_x(self, lon):
         return self.r_major * math.radians(lon)
 
@@ -142,11 +189,11 @@ class Example(QMainWindow):
         temp = self.r_minor / self.r_major
         eccent = math.sqrt(1 - temp ** 2)
         lon = 0
-        for e in range(50):
+        for e in range(100):
             lon = -2 * math.atan((math.e ** -iz_lon) *
                                  (((1 - eccent * math.sin(lon)) / (1 + eccent * math.sin(lon))) ** (
                                          eccent / 2))) + math.pi / 2
-        return round(math.degrees(lon), 5)
+        return round(math.degrees(lon), 7)
 
     def merc_y(self, lat):
         if lat > 89.5: lat = 89.5
